@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<script>
+  try {
+    var t = localStorage.getItem("ffn-theme");
+    if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", t);
+  } catch (e) {}
+</script>
+<title>FFN admin</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="index.html" aria-label="Back to the FFN site">
+      <span class="brand-mark">FFN</span>
+      <span class="brand-name">Admin</span>
+    </a>
+    <a class="view-site" href="index.html">View site</a>
+  </div>
+</header>
+
+<main class="wrap admin">
+  <div class="publish panel" id="publish">
+    <div class="publish-text">
+      <h1>Site editor</h1>
+      <p id="status"></p>
+    </div>
+    <div class="publish-actions">
+      <button class="btn btn-flag" type="button" id="download">Download config.js</button>
+      <button class="btn btn-line" type="button" id="discard">Discard changes</button>
+    </div>
+  </div>
+
+  <div class="publish-help" id="help">
+    <p><strong>How publishing works.</strong> Changes you make here are saved in this browser only. To put them on your site, click Download config.js, then upload that file to your host in place of <code>js/config.js</code>.</p>
+  </div>
+
+  <div class="adm-bar">
+    <nav class="adm-tabs" id="tabs" aria-label="Editor sections"></nav>
+    <label class="league-pick" id="league-pick">
+      <span>League</span>
+      <select id="league-select"></select>
+    </label>
+  </div>
+
+  <section id="panel" class="adm-panel" tabindex="-1"></section>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
