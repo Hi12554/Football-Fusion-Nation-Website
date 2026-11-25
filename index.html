@@ -52,13 +52,18 @@
   </div>
 </header>
 
+<section class="scorestrip" id="scorestrip" aria-label="Scores and upcoming games" hidden>
+  <div class="wrap strip-wrap">
+    <button class="strip-arrow" id="strip-prev" type="button" aria-label="Scroll scores left">&lsaquo;</button>
+    <div class="strip" id="strip"></div>
+    <button class="strip-arrow" id="strip-next" type="button" aria-label="Scroll scores right">&rsaquo;</button>
+  </div>
+</section>
+
 <main>
   <section class="hero wrap" id="watch" aria-labelledby="hero-title">
-    <div class="hero-head">
-      <h1 id="hero-title">Football Fusion 3 league games, live and on demand</h1>
-      <p>FFN streams the league on YouTube. Watch here when we&rsquo;re live, or pick any past game from the archive.</p>
-      <div class="seg league-tabs" id="league-tabs" role="group" aria-label="League" hidden></div>
-    </div>
+    <h1 class="sr-only" id="hero-title">Football Fusion Nation: Football Fusion 3 league games, live and on demand</h1>
+    <div class="seg league-tabs" id="league-tabs" role="group" aria-label="League" hidden></div>
 
     <div class="stage">
       <div class="stage-main">
@@ -67,7 +72,7 @@
       </div>
 
       <aside class="panel schedule" id="schedule" aria-labelledby="sched-title">
-        <h2 id="sched-title">Schedule</h2>
+        <h2 id="sched-title">Up next</h2>
         <div class="sched-scroll"><ol class="sched-list" id="sched-list"></ol></div>
         <p class="sched-note">Times are shown in your local time zone.</p>
       </aside>
@@ -88,7 +93,7 @@
         </label>
       </div>
     </div>
-    <ul class="rows" id="rows"></ul>
+    <ul class="cards" id="rows"></ul>
   </section>
 
   <section class="about wrap" id="about" aria-labelledby="about-title">

@@ -356,7 +356,7 @@
       el("div", { class: "grid" },
         el("div", { class: "wide" }, field("JSON file", file, "The same weekly slate file you use for the ticker (a {\"games\": [...]} file). Start times aren\u2019t in it, so games import as TBD and you can set times and live links after.")),
         el("div", { class: "wide" }, paste),
-        field("When importing", mode)),
+        el("div", { class: "wide" }, field("When importing", mode))),
       preview,
       el("div", { class: "form-actions" }, go, msg));
   }

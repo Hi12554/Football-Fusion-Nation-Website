@@ -246,10 +246,76 @@
     renderSchedule();
   }
 
+  /* ---------- score strip ---------- */
+  const stripBox = $("#scorestrip");
+  const stripEl = $("#strip");
+  const stripPrev = $("#strip-prev");
+  const stripNext = $("#strip-next");
+
+  function updateArrows() {
+    stripPrev.disabled = stripEl.scrollLeft < 4;
+    stripNext.disabled = stripEl.scrollLeft + stripEl.clientWidth >= stripEl.scrollWidth - 4;
+  }
+  const nudge = (dir) => stripEl.scrollBy({ left: dir * stripEl.clientWidth * 0.8, behavior: reduceMotion ? "auto" : "smooth" });
+  stripPrev.addEventListener("click", () => nudge(-1));
+  stripNext.addEventListener("click", () => nudge(1));
+  stripEl.addEventListener("scroll", updateArrows, { passive: true });
+  window.addEventListener("resize", updateArrows);
+
+  function stripCell(g, kind) {
+    const scored = kind === "final" && hasScore(g);
+    const t0 = g.start ? Date.parse(g.start) : NaN;
+    let status;
+    if (kind === "live") status = "Live";
+    else if (kind === "final") status = ["Final", gameDate(g) ? gameDate(g).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""].filter(Boolean).join(" \u00b7 ");
+    else if (Number.isNaN(t0)) status = "TBD";
+    else status = new Date(t0).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+    if (kind !== "final" && g.label) status += ` \u00b7 ${g.label}`;
+
+    const team = (key, rank, val, won) => {
+      const t = teamOf(key);
+      return el("span", { class: "sc-team" + (scored && !won ? " lose" : "") },
+        el("i", { class: "sc-swatch", style: `background:${t.color}` }),
+        el("span", { class: "sc-name" }, rank ? el("span", { class: "sc-rank", text: `#${rank}` }) : null, t.name),
+        scored && el("span", { class: "sc-score", text: String(val) }));
+    };
+
+    const playable = kind === "final" ? !!g.video : kind === "live" && canPlayLive(g);
+    const onclick = kind === "final"
+      ? () => openGame(g)
+      : () => { playLive(true); $("#watch").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); };
+    return el(playable ? "button" : "div", {
+      class: `sc ${kind}`, type: playable ? "button" : null, "data-video": kind === "final" && g.video ? g.video : "",
+      onclick: playable ? onclick : null
+    },
+      el("span", { class: "sc-status" }, kind === "live" && el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sc-status-text", text: status })),
+      team(g.away, g.awayRank, g.awayScore, scored && g.awayScore > g.homeScore),
+      team(g.home, g.homeRank, g.homeScore, scored && g.homeScore > g.awayScore));
+  }
+
+  function renderStrip() {
+    const now = Date.now();
+    const sched = (league.schedule || [])
+      .map((s) => ({ ...s, t: s.start ? Date.parse(s.start) : NaN }))
+      .filter((s) => isLive(s, now) || Number.isNaN(s.t) || s.t + liveMs > now)
+      .sort((a, b) => (Number.isNaN(a.t) - Number.isNaN(b.t)) || a.t - b.t);
+    const cells = [
+      ...sched.filter((s) => isLive(s, now)).map((s) => stripCell(s, "live")),
+      ...leagueGames().slice(0, 10).map((g) => stripCell(g, "final")),
+      ...sched.filter((s) => !isLive(s, now)).map((s) => stripCell(s, "up"))
+    ];
+    stripBox.hidden = !cells.length;
+    stripEl.replaceChildren(...cells);
+    stripEl.scrollLeft = 0;
+    updateArrows();
+    markCurrent();
+  }
+
   /* ---------- schedule ---------- */
   const schedList = $("#sched-list");
 
   function renderSchedule() {
+    renderStrip();
     const now = Date.now();
     livePill.hidden = !liveNow();
 
@@ -302,25 +368,48 @@
     ));
   }
 
+  function openGame(g) {
+    playGame(g, { autoplay: true });
+    if (g.video) history.replaceState(null, "", `#v=${encodeURIComponent(g.video)}`);
+    $("#watch").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }
+
   function thumb(g) {
+    const scored = hasScore(g);
+    const badge = el("span", { class: "badge", text: g.video ? (scored ? "Final" : "Game") : "No video" });
     if (g.video) {
       return el("span", { class: "thumb" },
-        el("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(g.video)}/mqdefault.jpg`, alt: "", loading: "lazy" }));
+        el("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(g.video)}/mqdefault.jpg`, alt: "", loading: "lazy" }),
+        badge, el("span", { class: "play", "aria-hidden": "true" }));
     }
     const a = teamOf(g.away), h = teamOf(g.home);
     return el("span", {
       class: "thumb blank",
-      style: `background:linear-gradient(90deg, ${a.color} 50%, ${h.color} 50%)`
-    }, `${a.abbr}  ${h.abbr}`);
+      style: `background:linear-gradient(105deg, ${a.color} 50%, ${h.color} 50%)`
+    }, el("span", { class: "blank-abbr", text: `${a.abbr}  ${h.abbr}` }), badge);
   }
 
-  function score(g) {
-    if (!hasScore(g)) return el("span", { class: "row-score", text: "No score" });
-    const side = (key, n, won) => el("span", { class: "side" + (won ? " win" : "") },
-      el("span", { class: "abbr", text: teamOf(key).abbr }), el("span", { class: "num", text: String(n) }));
-    return el("span", { class: "row-score" },
-      side(g.away, g.awayScore, g.awayScore > g.homeScore),
-      side(g.home, g.homeScore, g.homeScore > g.awayScore));
+  function cardTeam(key, rank, scoreVal, scored, won) {
+    const t = teamOf(key);
+    return el("span", { class: "card-team" + (scored && !won ? " lose" : "") },
+      el("i", { class: "swatch", style: `background:${t.color}` }),
+      el("span", { class: "tname" }, rank ? el("span", { class: "trank", text: `#${rank}` }) : null, t.name),
+      scored && el("span", { class: "tscore", text: String(scoreVal) }));
+  }
+
+  function card(g) {
+    const scored = hasScore(g);
+    const body = [
+      thumb(g),
+      el("span", { class: "card-body" },
+        el("span", { class: "card-teams" },
+          cardTeam(g.away, g.awayRank, g.awayScore, scored, scored && g.awayScore > g.homeScore),
+          cardTeam(g.home, g.homeRank, g.homeScore, scored, scored && g.homeScore > g.awayScore)),
+        el("span", { class: "card-sub", text: gameMeta(g) }))
+    ];
+    return g.video
+      ? el("button", { class: "card", type: "button", "data-video": g.video, onclick: () => openGame(g) }, body)
+      : el("div", { class: "card static", "data-video": "" }, body);
   }
 
   function renderRows() {
@@ -342,30 +431,12 @@
       return;
     }
 
-    rowsEl.replaceChildren(...list.map((g) =>
-      el("li", {},
-        el("button", {
-          class: "row", type: "button", "data-video": g.video || "",
-          onclick: () => {
-            playGame(g, { autoplay: true });
-            if (g.video) history.replaceState(null, "", `#v=${encodeURIComponent(g.video)}`);
-            $("#watch").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-          }
-        },
-          thumb(g),
-          el("span", {},
-            el("span", { class: "row-title", text: matchup(g) }),
-            el("span", { class: "row-sub", text: gameMeta(g) })
-          ),
-          score(g)
-        )
-      )
-    ));
+    rowsEl.replaceChildren(...list.map((g) => el("li", {}, card(g))));
     markCurrent();
   }
 
   function markCurrent() {
-    rowsEl.querySelectorAll(".row").forEach((r) => {
+    document.querySelectorAll(".card, .sc").forEach((r) => {
       const on = currentVideo && r.dataset.video === currentVideo;
       if (on) r.setAttribute("aria-current", "true"); else r.removeAttribute("aria-current");
     });
