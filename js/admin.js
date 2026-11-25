@@ -249,6 +249,118 @@
       form, list);
   }
 
+  /* ---------- schedule import ---------- */
+  // Maps the ticker/graphics JSON league labels onto the labels the site already uses.
+  const IMPORT_LABELS = { "rcfl gotw": "Game of the Week", "rcfl t25": "Top 25", "matchups": "Matchup", "matchup": "Matchup" };
+
+  function parseScheduleImport(text, lg) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { return { error: "That isn\u2019t valid JSON. Paste the whole file, from the first { to the last }." }; }
+    const list = Array.isArray(data) ? data : data && data.games;
+    if (!Array.isArray(list)) return { error: "Couldn\u2019t find a \u201cgames\u201d list in that JSON." };
+
+    const byName = new Map(Object.entries(lg.teams).map(([k, t]) => [t.name.toLowerCase(), k]));
+    const bySlug = new Map(Object.keys(lg.teams).map((k) => [k, k]));
+    const newTeams = {};
+    let used = Object.keys(lg.teams).length;
+
+    function teamKey(side) {
+      const name = String((side && side.name) || "").trim();
+      if (!name) return null;
+      const known = byName.get(name.toLowerCase()) || bySlug.get(slug(name));
+      if (known) return known;
+      let key = slug(name) || "team", base = key, i = 2;
+      while (lg.teams[key] || newTeams[key]) key = `${base}-${i++}`;
+      newTeams[key] = { name, abbr: name.replace(/[^a-z0-9]/gi, "").slice(0, 4).toUpperCase() || "TBD", color: PALETTE[used++ % PALETTE.length] };
+      byName.set(name.toLowerCase(), key);
+      return key;
+    }
+
+    const entries = [];
+    let skipped = 0;
+    for (const g of list) {
+      if (!g || g.enabled === false || !g.away || !g.home) { skipped++; continue; }
+      const away = teamKey(g.away), home = teamKey(g.home);
+      if (!away || !home || away === home) { skipped++; continue; }
+      const entry = { away, home };
+      const ar = parseInt(g.away.rank, 10), hr = parseInt(g.home.rank, 10);
+      if (ar >= 1 && ar <= 25) entry.awayRank = ar;
+      if (hr >= 1 && hr <= 25) entry.homeRank = hr;
+      const raw = String(g.league || g.label || "").trim();
+      const label = IMPORT_LABELS[raw.toLowerCase()] || raw;
+      if (label) entry.label = label;
+      entries.push(entry);
+    }
+    if (!entries.length) return { error: "No usable games in that file." };
+    return { entries, newTeams, skipped };
+  }
+
+  function renderImport(lg) {
+    let parsed = null;
+    const file = el("input", { type: "file", accept: ".json,application/json" });
+    const paste = el("textarea", { placeholder: "\u2026or paste the JSON here", spellcheck: "false" });
+    const mode = el("select", {},
+      el("option", { value: "replace", text: "Replace the current schedule" }),
+      el("option", { value: "add", text: "Add to the current schedule" }));
+    const preview = el("div", { class: "import-preview", "aria-live": "polite" });
+    const go = el("button", { class: "btn btn-flag", type: "button", text: "Import" });
+    go.disabled = true;
+    const msg = el("span", { class: "msg", "aria-live": "polite" });
+
+    const nameOf = (key, newTeams) => (lg.teams[key] || newTeams[key] || { name: key }).name;
+
+    function update() {
+      msg.textContent = "";
+      parsed = null;
+      go.disabled = true;
+      const text = paste.value.trim();
+      if (!text) return preview.replaceChildren();
+      const res = parseScheduleImport(text, lg);
+      if (res.error) return preview.replaceChildren(el("p", { class: "msg err", text: res.error }));
+      parsed = res;
+      go.disabled = false;
+      const n = res.entries.length, nt = Object.keys(res.newTeams).length;
+      const replacing = mode.value === "replace" && lg.schedule.length;
+      preview.replaceChildren(...[
+        el("p", { text: `${n} game${n === 1 ? "" : "s"} ready to import.` + (res.skipped ? ` ${res.skipped} skipped (disabled or incomplete).` : "") }),
+        nt > 0 && el("p", { text: `${nt} new team${nt === 1 ? "" : "s"} will be added to ${lg.name}: ${Object.values(res.newTeams).map((t) => t.name).join(", ")}.` }),
+        replacing && el("p", { text: `This replaces the ${lg.schedule.length} entries on the schedule now, including their start times and live links.` }),
+        el("ul", {}, res.entries.map((e) => el("li", { text: `${nameOf(e.away, res.newTeams)} at ${nameOf(e.home, res.newTeams)}${e.label ? ` \u2014 ${e.label}` : ""}` })))
+      ].filter(Boolean));
+    }
+
+    file.addEventListener("change", async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      try { paste.value = await f.text(); } catch (e) { paste.value = ""; }
+      update();
+    });
+    paste.addEventListener("input", update);
+    mode.addEventListener("change", update);
+
+    go.addEventListener("click", () => {
+      if (!parsed) return;
+      Object.assign(lg.teams, parsed.newTeams);
+      if (mode.value === "replace") lg.schedule = parsed.entries;
+      else {
+        const have = new Set(lg.schedule.map((s) => `${s.away}|${s.home}`));
+        lg.schedule.push(...parsed.entries.filter((e) => !have.has(`${e.away}|${e.home}`)));
+      }
+      ui.editSched = null;
+      persist();
+      renderSchedule();
+    });
+
+    return el("div", { class: "form" },
+      el("h3", { text: "Import a schedule" }),
+      el("div", { class: "grid" },
+        el("div", { class: "wide" }, field("JSON file", file, "The same weekly slate file you use for the ticker (a {\"games\": [...]} file). Start times aren\u2019t in it, so games import as TBD and you can set times and live links after.")),
+        el("div", { class: "wide" }, paste),
+        field("When importing", mode)),
+      preview,
+      el("div", { class: "form-actions" }, go, msg));
+  }
+
   /* ---------- schedule ---------- */
   function renderSchedule() {
     const lg = league();
@@ -317,7 +429,7 @@
     panelEl.replaceChildren(
       el("h2", { text: "Schedule" }),
       el("p", { class: "lede", text: "Upcoming games show on the site with a countdown, and the site opens on your live stream once a game starts." }),
-      form, list);
+      renderImport(lg), form, list);
   }
 
   /* ---------- teams ---------- */

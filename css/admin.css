@@ -69,3 +69,10 @@ input[type="color"] { width: 2.6rem; height: 2.3rem; padding: 0; border: 1px sol
   .team-row .btn-danger { grid-column: 1 / -1; justify-self: start; }
   .adm-tabs button { font-size: 1.25rem; padding-inline: .5rem; }
 }
+
+/* schedule import */
+.import-preview { margin-top: 1rem; font-size: .92rem; }
+.import-preview p + p { margin-top: .3rem; }
+.import-preview ul { margin-top: .6rem; max-height: 13rem; overflow-y: auto; border: 1px solid var(--line); background: var(--chalk); border-radius: 3px; }
+.import-preview li { padding: .4rem .65rem; border-bottom: 1px solid var(--line); }
+.import-preview li:last-child { border-bottom: 0; }

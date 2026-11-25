@@ -25,6 +25,13 @@ First-time setup
 - Games: paste the YouTube link for each game. Scores are optional.
 - Schedule: times are entered in your computer's time zone. Visitors see
   their own time zone.
+- Importing a schedule: on the Schedule tab, use "Import a schedule" to load a
+  weekly slate JSON (the same {"games": [...]} file used for the ticker). Pick the
+  file or paste its text, check the preview, choose replace or add, and click
+  Import. Teams that aren't in the league yet are added automatically (change
+  their color and short name on the Teams tab). Ranks above 25 are ignored.
+  Imported games have no start time (TBD); set times and live links by editing
+  each one. Then click Download config.js to publish.
 
 Test it locally
 ---------------
