@@ -167,6 +167,35 @@
     markCurrent();
   }
 
+  // The next game still to be played (soonest dated one first, then undated ones).
+  function nextUp() {
+    const now = Date.now();
+    return (league.schedule || [])
+      .map((s) => ({ ...s, t: s.start ? Date.parse(s.start) : NaN }))
+      .filter((s) => Number.isNaN(s.t) || s.t + liveMs > now)
+      .sort((a, b) => (Number.isNaN(a.t) - Number.isNaN(b.t)) || a.t - b.t)[0] || null;
+  }
+
+  // Nothing live and nothing recorded to play: say so, instead of showing a dead player.
+  function showIdle() {
+    currentVideo = null;
+    const next = nextUp();
+    const when = next && !Number.isNaN(next.t)
+      ? new Date(next.t).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+      : "Date TBD";
+    playerEl.replaceChildren(emptyPanel(
+      "Nothing live right now",
+      "Games go live on the channel on game days. Past games are in the archive below."));
+    nowEl.replaceChildren(
+      el("div", { class: "now-meta" },
+        el("p", { class: "now-title", text: next ? matchup(next) : league.name }),
+        el("p", { class: "now-sub", text: next ? `Next up. ${[next.label, when].filter(Boolean).join(". ")}` : "Subscribe on YouTube so you don\u2019t miss the next stream." })
+      ),
+      actions()
+    );
+    markCurrent();
+  }
+
   function showEmptyLeague() {
     currentVideo = null;
     playerEl.replaceChildren(emptyPanel("No games posted yet", `${league.name} games show up here after they stream.`));
@@ -183,8 +212,9 @@
   function defaultView() {
     if (canPlayLive(liveEntryIn(league))) return playLive();
     const games = leagueGames();
-    const latest = games.find((g) => g.video) || games[0];
+    const latest = games.find((g) => g.video);
     if (latest) return playGame(latest);
+    if (games.length || nextUp()) return showIdle();
     showEmptyLeague();
   }
 
@@ -233,19 +263,23 @@
       return;
     }
 
-    schedList.replaceChildren(...items.map((s, i) => {
+    const nodes = [];
+    let sawTbd = false;
+    items.forEach((s, i) => {
       const tbd = Number.isNaN(s.t);
       const d = tbd ? null : new Date(s.t);
       const live = isLive(s, now);
-      const cls = "sched-item" + (live ? " is-live" : !tbd && i === 0 && s.t > now ? " is-next" : "");
-      return el("li", { class: cls },
-        el("div", { class: "sched-when", text: tbd ? "Date TBD" : d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) }),
+      if (tbd && !sawTbd) { sawTbd = true; nodes.push(el("li", { class: "sched-group", text: "Date TBD" })); }
+      const cls = "sched-item" + (tbd ? " tbd" : "") + (live ? " is-live" : !tbd && i === 0 && s.t > now ? " is-next" : "");
+      nodes.push(el("li", { class: cls },
+        !tbd && el("div", { class: "sched-when", text: d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) }),
         !tbd && el("div", { class: "sched-time", text: d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZoneName: "short" }) }),
         el("div", { class: "sched-match", text: matchup(s) }),
         el("div", { class: "sched-meta", text: [s.label, !tbd && !live && i === 0 && s.t > now ? startsIn(s.t - now) : ""].filter(Boolean).join(". ") }),
         live && el("span", { class: "live-tag" }, el("span", { class: "dot", "aria-hidden": "true" }), "Live now")
-      );
-    }));
+      ));
+    });
+    schedList.replaceChildren(...nodes);
   }
 
   /* ---------- archive ---------- */
@@ -389,7 +423,8 @@
   if (!modalSeen && typeof betaModal.showModal === "function") {
     betaModal.showModal();
     betaModal.addEventListener("close", () => {
-      try { sessionStorage.setItem("ffn-beta-popup", "1"); } catch (e) {}
+      betaEl.hidden = true;
+      try { sessionStorage.setItem("ffn-beta-popup", "1"); sessionStorage.setItem("ffn-beta", "1"); } catch (e) {}
     });
     $("#beta-modal-ok").addEventListener("click", () => betaModal.close());
   }
