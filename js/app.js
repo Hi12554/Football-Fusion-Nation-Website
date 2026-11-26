@@ -109,12 +109,12 @@
     );
   }
 
-  function actions(extra) {
+  function actions(extra, quietSubscribe = false) {
     const subscribe = channel.url ? `${channel.url}${channel.url.includes("?") ? "&" : "?"}sub_confirmation=1` : "";
     return el("div", { class: "actions" },
       extra,
       (channel.id || liveEntryIn(league)) && el("button", { class: "btn btn-ghost", type: "button", text: "Watch live", onclick: () => playLive(true) }),
-      subscribe && el("a", { class: "btn btn-flag", href: subscribe, target: "_blank", rel: "noopener", text: "Subscribe" })
+      subscribe && el("a", { class: "btn " + (quietSubscribe ? "btn-ghost" : "btn-flag"), href: subscribe, target: "_blank", rel: "noopener", text: "Subscribe" })
     );
   }
 
@@ -209,8 +209,58 @@
     markCurrent();
   }
 
+  // The matchup to feature when nothing is live: the Game of the Week if one is
+  // scheduled, otherwise whatever is next on the slate.
+  function featured() {
+    const now = Date.now();
+    const upcoming = (league.schedule || [])
+      .map((s) => ({ ...s, t: s.start ? Date.parse(s.start) : NaN }))
+      .filter((s) => Number.isNaN(s.t) || s.t + liveMs > now);
+    const gotw = upcoming.find((s) => /game of the week/i.test(s.label || ""));
+    return gotw ? { entry: gotw, isGotw: true } : (nextUp() ? { entry: nextUp(), isGotw: false } : null);
+  }
+
+  function watchLatestButton() {
+    const g = leagueGames().find((x) => x.video);
+    if (g) return el("button", { class: "btn btn-flag", type: "button", text: "Watch latest", onclick: () => openGame(g) });
+    if (channel.url) return el("a", { class: "btn btn-flag", href: `${channel.url.replace(/\/$/, "")}/videos`, target: "_blank", rel: "noopener", text: "Watch latest" });
+    return null;
+  }
+
+  function showSpotlight(pick) {
+    currentVideo = null;
+    const s = pick.entry;
+    const side = (key, rank) => {
+      const t = teamOf(key);
+      return el("span", { class: "spot-side", style: `background:${t.color};color:${inkOn(t.color)}` },
+        el("span", { class: "spot-rank", text: rank ? `#${rank}` : "\u00a0" }),
+        el("b", { class: "spot-abbr", text: t.abbr }),
+        el("span", { class: "spot-name", text: t.name }));
+    };
+    const dated = !Number.isNaN(s.t) && !!s.start;
+    const tag = pick.isGotw ? "Game of the Week" : dated ? "Next up" : "This week";
+    const when = !dated ? "Date TBD"
+      : new Date(s.start).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    playerEl.replaceChildren(el("div", { class: "spotlight" },
+      el("span", { class: "spot-tag", text: tag }),
+      side(s.away, s.awayRank),
+      el("span", { class: "spot-at", "aria-hidden": "true", text: "at" }),
+      side(s.home, s.homeRank),
+      el("span", { class: "spot-when", text: when })));
+    nowEl.replaceChildren(
+      el("div", { class: "now-meta" },
+        el("p", { class: "now-title", text: matchup(s) }),
+        el("p", { class: "now-sub", text: [s.label, when].filter(Boolean).join(". ") })
+      ),
+      actions(watchLatestButton(), true)
+    );
+    markCurrent();
+  }
+
   function defaultView() {
     if (canPlayLive(liveEntryIn(league))) return playLive();
+    const pick = featured();
+    if (pick) return showSpotlight(pick);
     const games = leagueGames();
     const latest = games.find((g) => g.video);
     if (latest) return playGame(latest);
@@ -221,8 +271,24 @@
   /* ---------- leagues ---------- */
   const tabsEl = $("#league-tabs");
 
+  const headEl = $("#league-head");
+
+  // One league: a header (RCFL . Season 6 . Week 9). Two or more: the picker.
   function renderTabs() {
-    tabsEl.hidden = !leagues.length;
+    const single = leagues.length <= 1;
+    headEl.hidden = !single || !leagues.length;
+    tabsEl.hidden = single;
+    if (single) {
+      const games = leagueGames();
+      const season = games.reduce((m, g) => Math.max(m, g.season || 0), 0);
+      const latest = games.find((g) => g.week && (!season || g.season === season));
+      const bits = [season ? `Season ${season}` : "", latest ? `Week ${latest.week}` : ""].filter(Boolean);
+      headEl.replaceChildren(
+        el("span", { class: "lh-name", text: league.name }),
+        ...bits.flatMap((b) => [el("span", { class: "lh-dot", "aria-hidden": "true", text: "\u00b7" }), el("span", { class: "lh-meta", text: b })])
+      );
+      return;
+    }
     tabsEl.replaceChildren(...leagues.map((lg) =>
       el("button", {
         type: "button", text: lg.name, "aria-pressed": String(lg === league),

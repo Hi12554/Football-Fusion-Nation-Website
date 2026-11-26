@@ -228,107 +228,147 @@ window.FFN_CONFIG = {
       },
       "schedule": [
         {
-          "away": "texas",
-          "home": "youngstown-state",
+          "away": "wake-forest",
+          "home": "clemson",
           "awayRank": 2,
-          "homeRank": 12,
-          "label": "Game of the Week"
-        },
-        {
-          "away": "georgia",
-          "home": "vanderbilt",
           "homeRank": 11,
           "label": "Top 25"
         },
         {
           "away": "south-florida",
-          "home": "miami",
-          "awayRank": 6,
-          "label": "Top 25"
-        },
-        {
-          "away": "temple",
-          "home": "harvard",
-          "awayRank": 5,
-          "label": "Top 25"
-        },
-        {
-          "away": "tulane",
-          "home": "clemson",
-          "awayRank": 25,
-          "homeRank": 17,
-          "label": "Top 25"
-        },
-        {
-          "away": "michigan",
-          "home": "lsu",
-          "awayRank": 7,
-          "label": "Top 25"
-        },
-        {
-          "away": "arizona-state",
-          "home": "marshall",
-          "awayRank": 8,
-          "label": "Top 25"
-        },
-        {
-          "away": "uconn",
-          "home": "tennessee",
-          "awayRank": 23,
-          "homeRank": 19,
-          "label": "Top 25"
-        },
-        {
-          "away": "ohio-state",
-          "home": "oregon",
-          "awayRank": 13,
-          "label": "Top 25"
-        },
-        {
-          "away": "appalachian-state",
-          "home": "boston-college",
-          "homeRank": 20,
-          "label": "Top 25"
-        },
-        {
-          "away": "south-alabama",
           "home": "kennesaw-state",
-          "awayRank": 4,
-          "homeRank": 18,
-          "label": "Top 25"
-        },
-        {
-          "away": "kansas",
-          "home": "oklahoma",
+          "awayRank": 5,
           "homeRank": 22,
           "label": "Top 25"
         },
         {
-          "away": "alabama",
-          "home": "liberty",
-          "awayRank": 21,
-          "homeRank": 15,
+          "away": "ohio-state",
+          "home": "youngstown-state",
+          "awayRank": 6,
+          "homeRank": 18,
           "label": "Top 25"
         },
         {
-          "away": "florida",
-          "home": "penn-state",
-          "homeRank": 14,
+          "away": "arizona-state",
+          "home": "oregon",
+          "awayRank": 16,
           "label": "Top 25"
         },
         {
-          "away": "wake-forest",
-          "home": "cincinnati",
+          "away": "uconn",
+          "home": "boston-college",
+          "homeRank": 17,
+          "label": "Top 25"
+        },
+        {
+          "away": "texas",
+          "home": "miami",
           "awayRank": 1,
           "label": "Top 25"
         },
         {
-          "away": "indiana",
+          "away": "florida-state",
+          "home": "lsu",
+          "awayRank": 3,
+          "homeRank": 24,
+          "label": "Top 25"
+        },
+        {
+          "away": "south-alabama",
           "home": "baylor",
+          "awayRank": 4,
+          "label": "Top 25"
+        },
+        {
+          "away": "alabama",
+          "home": "penn-state",
+          "awayRank": 23,
+          "homeRank": 7,
+          "label": "Top 25"
+        },
+        {
+          "away": "temple",
+          "home": "oklahoma",
+          "awayRank": 9,
+          "homeRank": 25,
+          "label": "Top 25"
+        },
+        {
+          "away": "michigan",
+          "home": "tennessee",
+          "awayRank": 13,
+          "homeRank": 12,
+          "label": "Top 25"
+        },
+        {
+          "away": "oklahoma-state",
+          "home": "cincinnati",
+          "awayRank": 19,
+          "label": "Top 25"
+        },
+        {
+          "away": "georgia",
+          "home": "harvard",
+          "homeRank": 20,
+          "label": "Top 25"
+        },
+        {
+          "away": "indiana",
+          "home": "california",
+          "label": "Matchup"
+        },
+        {
+          "away": "san-diego-state",
+          "home": "north-carolina",
           "label": "Matchup"
         }
       ],
       "games": [
+        {
+          "season": 6,
+          "away": "kansas",
+          "home": "liberty",
+          "awayRank": 21,
+          "homeRank": 8,
+          "label": "Top 25",
+          "awayScore": 46,
+          "homeScore": 34
+        },
+        {
+          "season": 6,
+          "away": "florida",
+          "home": "boise-state",
+          "homeRank": 10,
+          "label": "Top 25",
+          "awayScore": 0,
+          "homeScore": 14
+        },
+        {
+          "season": 6,
+          "away": "appalachian-state",
+          "home": "vanderbilt",
+          "homeRank": 14,
+          "label": "Top 25",
+          "awayScore": 38,
+          "homeScore": 26
+        },
+        {
+          "season": 6,
+          "away": "air-force",
+          "home": "tulane",
+          "awayRank": 15,
+          "label": "Top 25",
+          "awayScore": 54,
+          "homeScore": 55
+        },
+        {
+          "season": 6,
+          "away": "mississippi-state",
+          "home": "marshall",
+          "label": "Matchup",
+          "awayScore": 0,
+          "homeScore": 14
+        },
         {
           "season": 6,
           "away": "oklahoma-state",
