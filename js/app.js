@@ -374,6 +374,16 @@
     $("#watch").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   }
 
+  // Pick black or white text for a given background color.
+  function inkOn(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+    if (!m) return "#fff";
+    const n = parseInt(m[1], 16);
+    const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+    return L > 0.3 ? "#111" : "#fff";
+  }
+
   function thumb(g) {
     const scored = hasScore(g);
     const badge = el("span", { class: "badge", text: g.video ? (scored ? "Final" : "Game") : "No video" });
@@ -382,11 +392,17 @@
         el("img", { src: `https://i.ytimg.com/vi/${encodeURIComponent(g.video)}/mqdefault.jpg`, alt: "", loading: "lazy" }),
         badge, el("span", { class: "play", "aria-hidden": "true" }));
     }
-    const a = teamOf(g.away), h = teamOf(g.home);
-    return el("span", {
-      class: "thumb blank",
-      style: `background:linear-gradient(105deg, ${a.color} 50%, ${h.color} 50%)`
-    }, el("span", { class: "blank-abbr", text: `${a.abbr}  ${h.abbr}` }), badge);
+    const half = (key, rank) => {
+      const t = teamOf(key);
+      return el("span", { class: "half", style: `background:${t.color};color:${inkOn(t.color)}` },
+        el("span", { class: "half-rank", text: rank ? `#${rank}` : "\u00a0" }),
+        el("b", { class: "half-abbr", text: t.abbr }));
+    };
+    return el("span", { class: "thumb blank" },
+      half(g.away, g.awayRank),
+      el("span", { class: "vs", "aria-hidden": "true", text: "at" }),
+      half(g.home, g.homeRank),
+      badge);
   }
 
   function cardTeam(key, rank, scoreVal, scored, won) {
