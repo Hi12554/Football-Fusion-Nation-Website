@@ -427,3 +427,36 @@ button.card:hover { border-color: var(--ink); transform: translateY(-2px); }
   .dot { animation: none; }
   button.card { transition: none; }
 }
+
+
+/* ---------- overview bar + hub ---------- */
+.hubbar { position: sticky; top: 3.5rem; z-index: 9; background: var(--paper); border-bottom: 1px solid var(--line); }
+.hubbar-in { display: flex; align-items: stretch; gap: .75rem; height: 3rem; }
+.hub-back {
+  flex: none; align-self: center; display: inline-flex; align-items: center; justify-content: center;
+  width: 2.2rem; height: 2.2rem; cursor: pointer;
+  background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 3px;
+}
+.hub-back:hover:not([disabled]) { border-color: var(--ink); color: var(--accent); }
+.hub-back[disabled] { opacity: .3; cursor: default; }
+.hub-back svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hub-items { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; }
+.hub-items button {
+  background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--ink); cursor: pointer;
+  font: 700 .82rem/1 var(--text); letter-spacing: .08em; text-transform: uppercase; padding: 0 .9rem;
+}
+.hub-items button:hover { color: var(--accent); }
+.hub-items button[aria-current="page"] { border-bottom-color: var(--accent); }
+.hub { padding-block: 2.5rem 3.5rem; }
+.hub h1 { font: 900 clamp(2rem, 5vw, 3.2rem)/1 var(--display); letter-spacing: .04em; text-transform: uppercase; }
+.hub-sub { color: var(--muted); margin-top: .6rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; margin-top: 1.75rem; }
+.tile {
+  text-align: left; cursor: pointer; background: var(--paper); color: var(--ink);
+  border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: 6px; padding: 1.25rem;
+}
+.tile:hover { border-color: var(--ink); border-top-color: var(--accent); }
+.tile b { display: block; font: 800 1.9rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; }
+.tile span { display: block; margin-top: .55rem; color: var(--muted); }
+body[data-view="channel"] .schedule, body[data-view="channel"] .league-head { display: none; }
+body[data-view="channel"] .stage { grid-template-columns: minmax(0, 1fr); }

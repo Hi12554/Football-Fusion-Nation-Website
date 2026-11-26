@@ -273,28 +273,18 @@
 
   const headEl = $("#league-head");
 
-  // One league: a header (RCFL . Season 6 . Week 9). Two or more: the picker.
+  // League header (RCFL . Season 6 . Week 9). League switching now lives in the top bar.
   function renderTabs() {
-    const single = leagues.length <= 1;
-    headEl.hidden = !single || !leagues.length;
-    tabsEl.hidden = single;
-    if (single) {
-      const games = leagueGames();
-      const season = games.reduce((m, g) => Math.max(m, g.season || 0), 0);
-      const latest = games.find((g) => g.week && (!season || g.season === season));
-      const bits = [season ? `Season ${season}` : "", latest ? `Week ${latest.week}` : ""].filter(Boolean);
-      headEl.replaceChildren(
-        el("span", { class: "lh-name", text: league.name }),
-        ...bits.flatMap((b) => [el("span", { class: "lh-dot", "aria-hidden": "true", text: "\u00b7" }), el("span", { class: "lh-meta", text: b })])
-      );
-      return;
-    }
-    tabsEl.replaceChildren(...leagues.map((lg) =>
-      el("button", {
-        type: "button", text: lg.name, "aria-pressed": String(lg === league),
-        onclick: () => { if (lg !== league) { setLeague(lg); defaultView(); } }
-      })
-    ));
+    tabsEl.hidden = true;
+    headEl.hidden = !leagues.length;
+    const games = leagueGames();
+    const season = games.reduce((m, g) => Math.max(m, g.season || 0), 0);
+    const latest = games.find((g) => g.week && (!season || g.season === season));
+    const bits = [season ? `Season ${season}` : "", latest ? `Week ${latest.week}` : ""].filter(Boolean);
+    headEl.replaceChildren(
+      el("span", { class: "lh-name", text: league.name }),
+      ...bits.flatMap((b) => [el("span", { class: "lh-dot", "aria-hidden": "true", text: "\u00b7" }), el("span", { class: "lh-meta", text: b })])
+    );
   }
 
   function setLeague(lg, { remember = true } = {}) {
@@ -370,7 +360,7 @@
       ...leagueGames().slice(0, 10).map((g) => stripCell(g, "final")),
       ...sched.filter((s) => !isLive(s, now)).map((s) => stripCell(s, "up"))
     ];
-    stripBox.hidden = !cells.length;
+    stripBox.hidden = !cells.length || view.name !== "league";
     stripEl.replaceChildren(...cells);
     stripEl.scrollLeft = 0;
     updateArrows();
@@ -582,7 +572,13 @@
     $("#beta-modal-ok").addEventListener("click", () => betaModal.close());
   }
 
-  /* ---------- start ---------- */
+  /* ---------- overview bar + views ---------- */
+  const hubEl = $("#hub");
+  const barItems = $("#hub-items");
+  const backBtn = $("#hub-back");
+  let view = { name: "home" };
+  const trail = [];
+
   function findVideo(id) {
     for (const lg of leagues) {
       const g = (lg.games || []).find((x) => x.video === id);
@@ -591,29 +587,90 @@
     return null;
   }
 
-  function initialLeague(params) {
-    let id = params.get("league");
-    if (!id) { try { id = localStorage.getItem("ffn-league"); } catch (e) {} }
-    return leagues.find((lg) => lg.id === id) || leagues[0] || emptyLeague;
+  function tile(title, sub, onclick) {
+    return el("button", { class: "tile", type: "button", onclick }, el("b", { text: title }), el("span", { text: sub }));
   }
 
-  function start() {
-    const params = new URLSearchParams(location.hash.slice(1));
-    const vid = params.get("v");
-    if (vid) {
-      const found = findVideo(vid);
-      if (found) { setLeague(found.lg, { remember: false }); return playGame(found.g); }
+  function renderHub() {
+    if (view.name === "leagues") {
+      hubEl.replaceChildren(
+        el("h1", { text: "Leagues" }),
+        el("p", { class: "hub-sub", text: "Pick a league to see its schedule, scores, and streams." }),
+        el("div", { class: "tiles" }, leagues.map((lg) => {
+          const n = (lg.games || []).length;
+          return tile(lg.name, `${n} ${n === 1 ? "game" : "games"} posted`, () => go({ name: "league", leagueId: lg.id }));
+        }))
+      );
+      return;
     }
-    const live = liveNow();
-    if (live && canPlayLive(live.entry)) { setLeague(live.lg, { remember: false }); return playLive(); }
-    setLeague(initialLeague(params), { remember: false });
-    defaultView();
+    hubEl.replaceChildren(
+      el("h1", { text: "Football Fusion Nation" }),
+      el("p", { class: "hub-sub", text: "Football Fusion 3 league games, live and on demand." }),
+      el("div", { class: "tiles" },
+        tile("Channel", "Live stream, about FFN, and our links.", () => go({ name: "channel" })),
+        tile("League", "Schedules, scores, and streams.", () => go({ name: "leagues" })))
+    );
   }
 
-  livePill.addEventListener("click", () => {
+  function renderBar() {
+    const n = view.name;
+    const root = n === "home" || n === "channel";
+    const items = root
+      ? [["Channel", n === "channel", () => go({ name: "channel" })], ["League", false, () => go({ name: "leagues" })]]
+      : leagues.map((lg) => [lg.name, n === "league" && view.leagueId === lg.id, () => go({ name: "league", leagueId: lg.id })]);
+    barItems.replaceChildren(...items.map(([label, on, fn]) =>
+      el("button", { type: "button", text: label, "aria-current": on ? "page" : null, onclick: fn })));
+    backBtn.disabled = !trail.length;
+  }
+
+  function applyView() {
+    const n = view.name;
+    document.body.dataset.view = n;
+    hubEl.hidden = !(n === "home" || n === "leagues");
+    $("#watch").hidden = !(n === "channel" || n === "league");
+    $("#archive").hidden = n !== "league";
+    $("#about").hidden = n !== "channel";
+    if (n === "league") {
+      setLeague(leagues.find((lg) => lg.id === view.leagueId) || leagues[0] || emptyLeague, { remember: false });
+      defaultView();
+    } else if (n === "channel") {
+      const live = liveNow();
+      setLeague(live ? live.lg : (leagues[0] || emptyLeague), { remember: false });
+      if (live && canPlayLive(live.entry)) playLive(); else defaultView();
+    } else {
+      playerEl.replaceChildren();      // stop any video that was playing
+      currentVideo = null;
+      stripBox.hidden = true;
+      renderHub();
+    }
+    if (n !== "league") history.replaceState(null, "", location.pathname + location.search);
+    renderBar();
+    window.scrollTo(0, 0);
+  }
+
+  function go(next, { push = true } = {}) {
+    if (push && (next.name !== view.name || next.leagueId !== view.leagueId)) trail.push(view);
+    view = next;
+    applyView();
+  }
+
+  backBtn.addEventListener("click", () => {
+    if (!trail.length) return;
+    view = trail.pop();
+    applyView();
+  });
+
+  $("#brand").addEventListener("click", (e) => {
+    e.preventDefault();
+    trail.length = 0;
+    go({ name: "home" }, { push: false });
+  });
+
+  livePill.addEventListener("click", (e) => {
+    e.preventDefault();
     const live = liveNow();
     if (!live) return;
-    if (live.lg !== league) setLeague(live.lg, { remember: false });
+    go({ name: "league", leagueId: live.lg.id });
     playLive();
   });
 
@@ -621,10 +678,23 @@
     const id = new URLSearchParams(location.hash.slice(1)).get("v");
     const found = id && findVideo(id);
     if (found) {
-      if (found.lg !== league) setLeague(found.lg, { remember: false });
+      if (view.name !== "league" || found.lg !== league) go({ name: "league", leagueId: found.lg.id });
       playGame(found.g);
     }
   });
+
+  /* ---------- start ---------- */
+  function start() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const found = params.get("v") && findVideo(params.get("v"));
+    if (found) {
+      go({ name: "league", leagueId: found.lg.id }, { push: false });
+      return playGame(found.g);
+    }
+    const lid = params.get("league");
+    if (lid && leagues.some((lg) => lg.id === lid)) return go({ name: "league", leagueId: lid }, { push: false });
+    go({ name: "home" }, { push: false });
+  }
 
   start();
   setInterval(renderSchedule, 60000);

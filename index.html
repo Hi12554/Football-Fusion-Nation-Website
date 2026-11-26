@@ -34,23 +34,26 @@
 
 <header class="site-header">
   <div class="wrap bar">
-    <a class="brand" href="#watch" aria-label="FFN, Football Fusion Nation">
+    <a class="brand" id="brand" href="#" aria-label="FFN, Football Fusion Nation">
       <span class="brand-mark">FFN</span>
       <span class="brand-name">Football Fusion Nation</span>
     </a>
-    <nav aria-label="Main">
-      <a href="#watch">Watch</a>
-      <a href="#schedule">Schedule</a>
-      <a href="#archive">Archive</a>
-      <a href="#about">About</a>
-    </nav>
-    <a class="live-pill" id="live-pill" href="#watch" hidden><span class="dot" aria-hidden="true"></span>Live<span class="now-word"> now</span></a>
+    <a class="live-pill" id="live-pill" href="#" hidden><span class="dot" aria-hidden="true"></span>Live<span class="now-word"> now</span></a>
     <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
       <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
       <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     </button>
   </div>
 </header>
+
+<div class="hubbar">
+  <div class="wrap hubbar-in">
+    <button class="hub-back" id="hub-back" type="button" aria-label="Back" title="Back" disabled>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 5v6a3 3 0 0 1-3 3H5"/><path d="M9 10l-4 4 4 4"/></svg>
+    </button>
+    <nav class="hub-items" id="hub-items" aria-label="Sections"></nav>
+  </div>
+</div>
 
 <section class="scorestrip" id="scorestrip" aria-label="Scores and upcoming games" hidden>
   <div class="wrap strip-wrap">
@@ -61,6 +64,8 @@
 </section>
 
 <main>
+  <section class="hub wrap" id="hub" aria-live="polite"></section>
+
   <section class="hero wrap" id="watch" aria-labelledby="hero-title">
     <h1 class="sr-only" id="hero-title">Football Fusion Nation: Football Fusion 3 league games, live and on demand</h1>
     <div class="league-head" id="league-head" hidden></div>
